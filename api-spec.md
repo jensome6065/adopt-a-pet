@@ -7,18 +7,60 @@ Content type for request/response bodies: `application/json`
 
 ```json
 {
-  "id": "string",
+  "id": 1,
   "name": "string",
-  "species": "string",
+  "type": "dog | cat | bird | other",
   "breed": "string",
   "age": 0,
   "description": "string",
   "adopted": false,
-  "imageUrl": "string",
-  "createdAt": "ISO-8601 string",
-  "updatedAt": "ISO-8601 string"
+  "imageUrl": "string"
 }
 ```
+
+## Data Model
+
+This section defines the pet profile shape used by the in-memory database in Lab 2 and later translated to `schema.prisma` in Lab 3.
+
+- `id`
+  - **Type**: integer
+  - **Required**: yes
+  - **Constraints/notes**: Auto-incrementing unique identifier managed by the server (clients do not provide it on create).
+
+- `name`
+  - **Type**: string
+  - **Required**: yes
+  - **Constraints/notes**: Trimmed, non-empty, recommended max length 100 characters.
+
+- `type`
+  - **Type**: string (enum-like)
+  - **Required**: yes
+  - **Constraints/notes**: Must be one of `dog`, `cat`, `bird`, `other`.
+
+- `breed`
+  - **Type**: string
+  - **Required**: no
+  - **Constraints/notes**: Optional because mixed or unknown breeds are common.
+
+- `age`
+  - **Type**: integer
+  - **Required**: yes
+  - **Constraints/notes**: Whole number in years, minimum `0`.
+
+- `description`
+  - **Type**: string
+  - **Required**: yes
+  - **Constraints/notes**: Short adoption summary (temperament, needs, behavior), non-empty.
+
+- `adopted`
+  - **Type**: boolean
+  - **Required**: no
+  - **Constraints/notes**: Defaults to `false` for new listings.
+
+- `imageUrl`
+  - **Type**: string
+  - **Required**: no
+  - **Constraints/notes**: Optional URL to a pet photo.
 
 ---
 
@@ -111,9 +153,8 @@ Content type for request/response bodies: `application/json`
 - **Method**: `GET`
 - **Path**: `/pets`
 - **Request params/body**:
-  - Query params (optional):
-    - `species` (string) - filter by species
-    - `adopted` (boolean) - filter by adoption status
+  - No route params
+  - No query params in Lab 2 implementation
   - No request body
 
 **Success response**
@@ -124,29 +165,26 @@ Content type for request/response bodies: `application/json`
 {
   "pets": [
     {
-      "id": "pet_123",
+      "id": 1,
       "name": "Luna",
-      "species": "dog",
+      "type": "dog",
       "breed": "Labrador Mix",
       "age": 3,
       "description": "Friendly and energetic.",
       "adopted": false,
-      "imageUrl": "https://example.com/luna.jpg",
-      "createdAt": "2026-06-17T15:00:00.000Z",
-      "updatedAt": "2026-06-17T15:00:00.000Z"
+      "imageUrl": "https://example.com/luna.jpg"
     }
   ]
 }
 ```
 
-**Error response (example)**
-- **Status**: `400 Bad Request`
-- **When**: `adopted` query param is not `true` or `false`
+**Empty state behavior**
+- **Status**: `200 OK`
 - **Body**:
 
 ```json
 {
-  "error": "Invalid query parameter: adopted must be true or false"
+  "pets": []
 }
 ```
 
@@ -158,7 +196,7 @@ Content type for request/response bodies: `application/json`
 - **Path**: `/pets/:id`
 - **Request params/body**:
   - Route params:
-    - `id` (string, required)
+    - `id` (integer in URL path, required)
   - No request body
 
 **Success response**
@@ -168,16 +206,14 @@ Content type for request/response bodies: `application/json`
 ```json
 {
   "pet": {
-    "id": "pet_123",
+    "id": 1,
     "name": "Luna",
-    "species": "dog",
+    "type": "dog",
     "breed": "Labrador Mix",
     "age": 3,
     "description": "Friendly and energetic.",
     "adopted": false,
-    "imageUrl": "https://example.com/luna.jpg",
-    "createdAt": "2026-06-17T15:00:00.000Z",
-    "updatedAt": "2026-06-17T15:00:00.000Z"
+    "imageUrl": "https://example.com/luna.jpg"
   }
 }
 ```
@@ -200,13 +236,14 @@ Content type for request/response bodies: `application/json`
 - **Method**: `POST`
 - **Path**: `/pets`
 - **Request params/body**:
-  - JSON body (required fields: `name`, `species`, `breed`, `age`, `description`)
+  - JSON body (required fields: `name`, `type`, `age`, `description`)
   - Optional fields: `imageUrl`, `adopted` (defaults to `false`)
+  - `breed` is optional
 
 ```json
 {
   "name": "Mochi",
-  "species": "cat",
+  "type": "cat",
   "breed": "Domestic Shorthair",
   "age": 2,
   "description": "Calm and affectionate.",
@@ -222,19 +259,22 @@ Content type for request/response bodies: `application/json`
 ```json
 {
   "pet": {
-    "id": "pet_124",
+    "id": 4,
     "name": "Mochi",
-    "species": "cat",
+    "type": "cat",
     "breed": "Domestic Shorthair",
     "age": 2,
     "description": "Calm and affectionate.",
     "adopted": false,
-    "imageUrl": "https://example.com/mochi.jpg",
-    "createdAt": "2026-06-17T15:05:00.000Z",
-    "updatedAt": "2026-06-17T15:05:00.000Z"
+    "imageUrl": "https://example.com/mochi.jpg"
   }
 }
 ```
+
+**Validation Rules**
+- Required fields: `name` (non-empty string), `type` (one of `dog`, `cat`, `bird`, `other`), `age` (integer >= 0), `description` (non-empty string)
+- Optional fields: `breed` (string), `imageUrl` (string), `adopted` (boolean, defaults to `false`)
+- Note: Lab 2 implementation does not yet enforce validation at runtime; validation checks are planned for Lab 3.
 
 **Error response (example)**
 - **Status**: `400 Bad Request`
@@ -243,7 +283,7 @@ Content type for request/response bodies: `application/json`
 
 ```json
 {
-  "error": "Invalid pet data: name, species, breed, age, and description are required"
+  "error": "Invalid pet data: name, type, age, and description are required"
 }
 ```
 
@@ -253,22 +293,21 @@ Content type for request/response bodies: `application/json`
 
 - **Method**: `PUT`
 - **Path**: `/pets/:id`
+- **Update strategy note**: This API uses `PUT` (not `PATCH`) for updates in Lab 2. We keep one update endpoint shape and return a full pet record after merging provided fields into the existing object.
 - **Request params/body**:
   - Route params:
-    - `id` (string, required)
+    - `id` (integer in URL path, required)
   - JSON body:
-    - Full replacement of editable pet fields:
-      - `name`, `species`, `breed`, `age`, `description`, `adopted`, `imageUrl`
+    - Updatable fields:
+      - `name`, `type`, `breed`, `age`, `description`, `adopted`, `imageUrl`
+    - Partial body is allowed in this lab implementation (fields not included are preserved)
 
 ```json
 {
   "name": "Luna",
-  "species": "dog",
-  "breed": "Labrador Mix",
+  "type": "dog",
   "age": 4,
-  "description": "Friendly, energetic, and leash-trained.",
-  "adopted": true,
-  "imageUrl": "https://example.com/luna-updated.jpg"
+  "description": "Friendly, energetic, and leash-trained."
 }
 ```
 
@@ -279,16 +318,14 @@ Content type for request/response bodies: `application/json`
 ```json
 {
   "pet": {
-    "id": "pet_123",
+    "id": 1,
     "name": "Luna",
-    "species": "dog",
+    "type": "dog",
     "breed": "Labrador Mix",
     "age": 4,
     "description": "Friendly, energetic, and leash-trained.",
     "adopted": true,
-    "imageUrl": "https://example.com/luna-updated.jpg",
-    "createdAt": "2026-06-17T15:00:00.000Z",
-    "updatedAt": "2026-06-17T15:10:00.000Z"
+    "imageUrl": "https://example.com/luna-updated.jpg"
   }
 }
 ```
@@ -312,7 +349,7 @@ Content type for request/response bodies: `application/json`
 - **Path**: `/pets/:id`
 - **Request params/body**:
   - Route params:
-    - `id` (string, required)
+    - `id` (integer in URL path, required)
   - No request body
 
 **Success response**
@@ -329,6 +366,19 @@ Content type for request/response bodies: `application/json`
   "error": "Pet not found"
 }
 ```
+
+---
+
+## Decisions Log — CRUD Implementation
+
+- **Most interesting spec-vs-code moment**: `GET /pets` initially had a success example but no explicit empty-state behavior.  
+  **Why it mattered**: Documenting `200` with `{ "pets": [] }` removed ambiguity for frontend handling when no records exist.
+
+- **API design choice I'd defend**: Kept a consistent envelope response shape for resources (`{ "pets": [...] }`, `{ "pet": {...} }`) and a consistent error shape (`{ "error": "..." }`) across CRUD routes.  
+  **Why**: Predictable response shapes simplify client parsing and reduce per-route conditionals.
+
+- **Something I found during testing that changed the spec**: Early examples used `species` and string IDs, while implementation used `type` and integer IDs.  
+  **Why it changed**: The spec was updated to match the actual data model and in-memory behavior before moving to Prisma.
 
 ---
 
@@ -352,6 +402,21 @@ Content type for request/response bodies: `application/json`
 
 ---
 
+## Decisions Log — Data Model
+
+- **Decision**: Used integer auto-increment `id` values.
+  **Why**: They are simple to generate in-memory now and easy to migrate to Prisma later with `@id @default(autoincrement())`.
+
+- **Decision**: Made `breed` optional.
+  **Why**: Many adoption listings are mixed-breed or unknown-breed, so requiring breed would force placeholder values.
+
+- **Decision**: Stored `age` as an integer and constrained `type` to `dog`, `cat`, `bird`, or `other`.
+  **Why**: Integer `age` is easier to validate/filter/sort, and constrained `type` keeps API data consistent across clients.
+
+- **What I'd reconsider**: Add `vaccinated` and `spayedNeutered` booleans in a future revision so adopters can filter by common health criteria.
+
+---
+
 ## Spec Status — After Lab 1
 
 ### Implemented
@@ -370,3 +435,23 @@ Content type for request/response bodies: `application/json`
 - None at this stage. All currently implemented routes are documented in the spec.
 - `GET /` matches spec (`200` + JSON welcome message).
 - `GET /hello-world` and `GET /hello-pet` match spec (both return `200` + plain text responses).
+
+---
+
+## Spec Reconciliation — Lab 2
+
+### Routes verified
+- `GET /pets` — ✅ matches spec
+- `GET /pets/:id` — ✅ matches spec
+- `POST /pets` — ✅ matches spec
+- `PUT /pets/:id` — ✅ matches spec
+- `DELETE /pets/:id` — ✅ matches spec
+
+### Gaps found and resolved
+- `GET /pets` previously documented query filters (`species`, `adopted`) and a `400` error case not implemented in code; spec was updated to reflect current Lab 2 behavior (no query filtering).
+- Early examples in multiple route sections used old fields (`species`, timestamp fields, string IDs) while implementation uses `type`, no timestamps, and integer IDs; examples were updated to match code.
+- `GET /pets/:id` route param type was listed as string; corrected to integer-in-path semantics used by implementation.
+
+### Intentional spec updates
+- Added a clear note under `POST /pets` validation rules that runtime validation is deferred to Lab 3, so current Lab 2 behavior remains accurately documented.
+- Kept envelope response shapes (`{ "pets": [...] }` and `{ "pet": {...} }`) as the contract because implementation and tests consistently use them.
