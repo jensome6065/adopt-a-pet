@@ -274,7 +274,7 @@ This section defines the pet profile shape used by the in-memory database in Lab
 **Validation Rules**
 - Required fields: `name` (non-empty string), `type` (one of `dog`, `cat`, `bird`, `other`), `age` (integer >= 0), `description` (non-empty string)
 - Optional fields: `breed` (string), `imageUrl` (string), `adopted` (boolean, defaults to `false`)
-- Note: Lab 2 implementation does not yet enforce validation at runtime; validation checks are planned for Lab 3.
+- Runtime enforcement: Validation is enforced before Prisma calls in Lab 3. Invalid payloads return `400` with the error shape documented below.
 
 **Error response (example)**
 - **Status**: `400 Bad Request`
@@ -338,6 +338,29 @@ This section defines the pet profile shape used by the in-memory database in Lab
 ```json
 {
   "error": "Pet not found"
+}
+```
+
+**Validation Rules**
+- Partial body is allowed, but at least one updatable field must be present.
+- Allowed update fields only: `name`, `type`, `breed`, `age`, `description`, `adopted`, `imageUrl`.
+- If provided, fields must satisfy the same type/value rules used by `POST /pets`:
+  - `name`: non-empty string
+  - `type`: one of `dog`, `cat`, `bird`, `other`
+  - `age`: integer >= 0
+  - `description`: non-empty string
+  - `breed`: string or `null`
+  - `imageUrl`: string or `null`
+  - `adopted`: boolean
+
+**Validation error response (example)**
+- **Status**: `400 Bad Request`
+- **When**: Empty body, non-updatable fields, or invalid values/types in provided fields
+- **Body**:
+
+```json
+{
+  "error": "Invalid update data: provide at least one updatable field with valid values"
 }
 ```
 
@@ -467,3 +490,27 @@ This section defines the pet profile shape used by the in-memory database in Lab
 ### Intentional spec updates
 - Added a clear note under `POST /pets` validation rules that runtime validation is deferred to Lab 3, so current Lab 2 behavior remains accurately documented.
 - Kept envelope response shapes (`{ "pets": [...] }` and `{ "pet": {...} }`) as the contract because implementation and tests consistently use them.
+
+---
+
+## Spec Reconciliation — After Prisma Refactor
+
+### Behavior that changed
+- Optional fields (`breed`, `imageUrl`) now come back as `null` when not provided, because Prisma/PostgreSQL stores nullable columns as `NULL`; this replaces the in-memory behavior where those fields could be omitted or left `undefined`.
+- `prisma.pet.update()` and `prisma.pet.delete()` throw `P2025` when the record does not exist; route-level `try/catch` now maps that to the contract's `404 { "error": "Pet not found" }` response so external behavior stays the same.
+
+### Spec updates made
+- Documented the nullable-field behavior (`null` for missing optional values) as an implementation note in this reconciliation section.
+- No route contract changes were required: methods, paths, success status codes, error status codes, and response envelope shapes (`{ "pets": [...] }`, `{ "pet": {...} }`, `{ "error": "..." }`) remain unchanged.
+
+---
+
+## Decisions Log — Input Validation
+
+- **Validation rule that was already in the spec**: `POST /pets` requires `name`, `type`, `age`, and `description`; this is now enforced before calling Prisma.
+
+- **Validation rule I added to the spec before implementing**: `PUT /pets/:id` now explicitly requires at least one allowed updatable field and rejects unknown fields with `400`.
+
+- **Edge case I didn't think about until implementing**: Empty strings (like `"name": "   "`) should fail validation even though a key is present; checks now require non-empty trimmed strings.
+
+- **Why these checks happen before the Prisma call**: Early validation returns clear, contract-specific `400` responses and avoids relying on database/ORM exceptions for user input errors.
