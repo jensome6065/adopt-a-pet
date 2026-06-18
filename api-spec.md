@@ -54,8 +54,8 @@ This section defines the pet profile shape used by the in-memory database in Lab
 
 - `adopted`
   - **Type**: boolean
-  - **Required**: no
-  - **Constraints/notes**: Defaults to `false` for new listings.
+  - **Required**: yes (stored record), optional in create requests
+  - **Constraints/notes**: Defaults to `false` for new listings when omitted by the client.
 
 - `imageUrl`
   - **Type**: string
@@ -414,6 +414,18 @@ This section defines the pet profile shape used by the in-memory database in Lab
   **Why**: Integer `age` is easier to validate/filter/sort, and constrained `type` keeps API data consistent across clients.
 
 - **What I'd reconsider**: Add `vaccinated` and `spayedNeutered` booleans in a future revision so adopters can filter by common health criteria.
+
+---
+
+## Decisions Log — Schema Formalization
+
+- **Field that translated cleanly**: `name: String` and `description: String` mapped directly from required string fields with no ambiguity.
+
+- **Field that required a spec update**: `adopted` was listed as optional in the provisional model, but because records should always have an adoption state and default to `false`, it was clarified as required in stored records (still optional in create input).
+
+- **Constraint I added that wasn't explicit in Prisma terms**: `type` was enforced with a Prisma enum (`PetType`) to encode the existing allowed values (`dog`, `cat`, `bird`, `other`) structurally.
+
+- **What the schema enforces that the array didn't**: PostgreSQL now enforces required fields and type correctness at write time, and auto-generates unique `id` values instead of relying on in-memory conventions.
 
 ---
 
