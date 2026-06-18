@@ -514,3 +514,20 @@ This section defines the pet profile shape used by the in-memory database in Lab
 - **Edge case I didn't think about until implementing**: Empty strings (like `"name": "   "`) should fail validation even though a key is present; checks now require non-empty trimmed strings.
 
 - **Why these checks happen before the Prisma call**: Early validation returns clear, contract-specific `400` responses and avoids relying on database/ORM exceptions for user input errors.
+
+---
+
+## Spec Reconciliation — Lab 3 Complete
+
+### System state
+- Database: Prisma + PostgreSQL (`pets` table, migration: `init_pets_table`)
+- Routes: 5 CRUD endpoints (`GET /pets`, `GET /pets/:id`, `POST /pets`, `PUT /pets/:id`, `DELETE /pets/:id`)
+- Validation: Strict required-field checks on `POST /pets`; `PUT /pets/:id` requires at least one allowed updatable field and validates all provided values
+
+### Final gap report
+- Gap found and resolved (documentation): the final validation summary language was clarified so `PUT /pets/:id` is documented accurately as partial-update validation (not full required-field validation like `POST`).
+- No schema/model gaps found: all fields in `schema.prisma` (`id`, `name`, `type`, `breed`, `age`, `description`, `adopted`, `imageUrl`) are reflected in the API spec data model.
+- No route contract gaps found: methods, paths, response envelope shapes, and success/error status codes match the implementation.
+
+### What changed most from the original Lab 1 spec
+- The spec evolved from a basic route contract to a full system document with a formal data model, Prisma/schema reconciliation notes, runtime validation rules, and decisions logs that explain why implementation choices were made.
