@@ -1,0 +1,39 @@
+:root {
+  font-family: Barlow, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  margin: 0px;
+  padding: 0px;
+  background-color: #ffd6ff;
+}
+
+body {
+  margin: 0px;
+  padding: 0px;
+}
+
+h1, h2, h3, p {
+  margin: 0 0 10px 0;
+}
+
+input, select {
+  padding: 10px;
+  margin-top: 5px;
+  margin-right: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+button {
+  cursor: pointer;
+  background-color: #3a86ff;
+  color: white;
+  padding: 10px;
+  text-transform: uppercase;
+  margin: 10px;
+}
+
+button:hover {
+  opacity: 0.8;
+  background-color: #57cc99;
+}

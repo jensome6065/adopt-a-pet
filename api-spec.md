@@ -655,3 +655,34 @@ This section defines the pet profile shape used by the in-memory database in Lab
   **Why**: Success paths are easy to focus on first, but this `400` validation case verifies that contract-level input validation is actually enforced.
 
 - **One thing npm test confirmed about the contract**: Core CRUD routes return the documented status codes (`200`, `201`, `204`) and error responses include the consistent `{ "error": "..." }` shape.
+
+---
+
+## Spec Reconciliation — Lab 4 Final
+
+### Routes verified
+- `GET /pets` — ✅ matches spec
+- `GET /pets/:id` — ✅ matches spec
+- `POST /pets` — ✅ matches spec
+- `PUT /pets/:id` — ✅ matches spec
+- `DELETE /pets/:id` — ✅ matches spec
+
+### Error shapes verified
+- Consistent `{ "error": "..." }` shape across all routes: ✅
+
+### Query parameters verified
+- `type` filter: ✅ matches spec
+- `age_min` / `age_max` filters: ✅ match spec
+
+### Frontend integration verified
+- Frontend fetch calls match documented routes: ✅
+- Response fields frontend reads are returned by backend: ✅
+
+### Gaps found and resolved
+- Frontend initially had no API calls implemented; added fetch integration for list/filter (`GET /pets`), read-by-id (`GET /pets/:id`), create (`POST /pets`), update (`PUT /pets/:id`), and delete (`DELETE /pets/:id`).
+- Frontend filter UI state used `ageMin`/`ageMax` while the contract documents `age_min`/`age_max`; mapped frontend values to documented query parameter names before issuing requests.
+- Frontend add/update forms initially omitted `description` even though `POST`/`PUT` validation requires it when supplied; added `description` input and included it in request payloads.
+- Frontend now reads and displays standardized error responses via the `{ "error": "..." }` field for non-2xx responses.
+
+### Intentional spec updates made during this audit
+- No contract changes were required; implementation was updated to match the existing API spec.

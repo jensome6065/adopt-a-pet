@@ -1,0 +1,17 @@
+nav {
+    background-color: #ffbe0b;
+    padding: 10px;
+    color: white;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+form {
+    display: flex;
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+}

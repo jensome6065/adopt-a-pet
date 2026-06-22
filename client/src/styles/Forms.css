@@ -1,0 +1,20 @@
+.pet-form {
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+}
+
+.pet-form label {
+    margin: 10px;
+}
+
+.pet-form input {
+    margin: 10px;
+}
+
+.form-buttons {
+    display: flex;
+    align-items: center;
+}
+  

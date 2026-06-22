@@ -1,0 +1,24 @@
+.pets-container {
+    display: flex;
+    margin: 20px;
+    justify-content: center;
+}
+
+.pet-card {
+    border: 1px solid #8338ec;
+    border-radius: 5px;
+    margin: 20px;
+    padding: 20px;
+    width: 25%;
+    background-color: white;
+}
+
+.pet-card h2 {
+    color: #8338ec;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
