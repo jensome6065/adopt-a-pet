@@ -166,7 +166,19 @@ This section defines the pet profile shape used by the in-memory database in Lab
 - **Path**: `/pets`
 - **Request params/body**:
   - No route params
-  - No query params in Lab 2 implementation
+  - Query params (all optional):
+    - `type`
+      - Filters pets by pet type
+      - Expected type: string
+      - Allowed values: `dog`, `cat`, `bird`, `other`
+    - `age_min`
+      - Filters pets to age greater than or equal to the provided value
+      - Expected type: integer
+    - `age_max`
+      - Filters pets to age less than or equal to the provided value
+      - Expected type: integer
+  - Default behavior when query params are omitted: return all pets
+  - Unrecognized query params: ignored (no error)
   - No request body
 
 **Success response**
@@ -201,6 +213,16 @@ This section defines the pet profile shape used by the in-memory database in Lab
 ```
 
 **Error responses**
+
+- **Status**: `400 Bad Request`
+- **When**: A supported query parameter has an invalid value (for example, `type=fish`, non-integer `age_min`, non-integer `age_max`, or `age_min > age_max`)
+- **Body**:
+
+```json
+{
+  "error": "Invalid query parameters"
+}
+```
 
 - **Status**: `500 Internal Server Error`
 - **When**: Unexpected server/database failure while retrieving pets
@@ -608,3 +630,16 @@ This section defines the pet profile shape used by the in-memory database in Lab
 
 - **One case where implementation diverged from the spec**: Prisma throws `P2025` for missing records during update/delete, while the external contract expects `404 Pet not found`.
   **How I handled it**: Route handlers translate `P2025` to `NotFoundError("Pet not found")`, and error middleware returns the contract-compliant `404` response shape.
+
+---
+
+## Decisions Log — Query Parameters (Lab 4)
+
+- **Filter I added that wasn't in my initial draft**: Added `age_min` and `age_max` together (range filtering) instead of only exact-age filtering.
+  **Why**: Age ranges map better to real adoption search behavior (for example, "young pets" or "senior pets") and combine naturally with `type`.
+
+- **req.query always returns strings — what this required**: Converted `age_min`/`age_max` with `parseInt(...)` and validated with `Number.isInteger(...)` before building Prisma filters.
+  **Why**: Prevents passing invalid numeric values into the Prisma `where` clause and keeps query-validation failures explicit as `400`.
+
+- **Edge case I had to decide on**: `type=dog&age_max=0` can validly return an empty array.
+  **Why**: A valid filter that finds no matches should still be `200` with `{ "pets": [] }`; only malformed query values return `400`.

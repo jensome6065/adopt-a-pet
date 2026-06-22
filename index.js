@@ -62,7 +62,47 @@ app.get("/hello-pet", (req, res) => {
 
 app.get("/pets", async (req, res, next) => {
   try {
-    const pets = await prisma.pet.findMany();
+    const { type, age_min: ageMinRaw, age_max: ageMaxRaw } = req.query;
+    const filters = {};
+
+    if (type !== undefined) {
+      if (!allowedPetTypes.includes(type)) {
+        throw new ValidationError("Invalid query parameters");
+      }
+      filters.type = type;
+    }
+
+    if (ageMinRaw !== undefined || ageMaxRaw !== undefined) {
+      const ageFilter = {};
+
+      if (ageMinRaw !== undefined) {
+        const ageMin = parseInt(ageMinRaw, 10);
+        if (!Number.isInteger(ageMin) || ageMin < 0) {
+          throw new ValidationError("Invalid query parameters");
+        }
+        ageFilter.gte = ageMin;
+      }
+
+      if (ageMaxRaw !== undefined) {
+        const ageMax = parseInt(ageMaxRaw, 10);
+        if (!Number.isInteger(ageMax) || ageMax < 0) {
+          throw new ValidationError("Invalid query parameters");
+        }
+        ageFilter.lte = ageMax;
+      }
+
+      if (
+        ageFilter.gte !== undefined &&
+        ageFilter.lte !== undefined &&
+        ageFilter.gte > ageFilter.lte
+      ) {
+        throw new ValidationError("Invalid query parameters");
+      }
+
+      filters.age = ageFilter;
+    }
+
+    const pets = await prisma.pet.findMany({ where: filters });
     res.status(200).json({ pets });
   } catch (err) {
     next(err);
