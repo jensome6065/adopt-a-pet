@@ -643,3 +643,15 @@ This section defines the pet profile shape used by the in-memory database in Lab
 
 - **Edge case I had to decide on**: `type=dog&age_max=0` can validly return an empty array.
   **Why**: A valid filter that finds no matches should still be `200` with `{ "pets": [] }`; only malformed query values return `400`.
+
+---
+
+## Decisions Log — Automated Tests (Lab 4)
+
+- **Test that revealed a gap between spec and implementation**: Initial test setup highlighted that the server file started listening immediately, which made route-level Supertest imports brittle.
+  **How I handled it**: Split Express app construction into `app.js` and kept `index.js` for startup only, so tests can import the app without binding a network port.
+
+- **Error case I almost didn't test**: `POST /pets` with missing required fields.
+  **Why**: Success paths are easy to focus on first, but this `400` validation case verifies that contract-level input validation is actually enforced.
+
+- **One thing npm test confirmed about the contract**: Core CRUD routes return the documented status codes (`200`, `201`, `204`) and error responses include the consistent `{ "error": "..." }` shape.
