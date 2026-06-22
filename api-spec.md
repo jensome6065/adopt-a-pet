@@ -3,6 +3,18 @@
 Base URL (example): `/api`
 Content type for request/response bodies: `application/json`
 
+### Global Error Response Shape
+
+All error responses in this API use the same JSON shape:
+
+```json
+{
+  "error": "string"
+}
+```
+
+This includes validation errors (`400`), not-found errors (`404`), and unexpected server errors (`500`).
+
 ### Pet Object Shape
 
 ```json
@@ -188,6 +200,18 @@ This section defines the pet profile shape used by the in-memory database in Lab
 }
 ```
 
+**Error responses**
+
+- **Status**: `500 Internal Server Error`
+- **When**: Unexpected server/database failure while retrieving pets
+- **Body**:
+
+```json
+{
+  "error": "Internal server error"
+}
+```
+
 ---
 
 ## 2) Retrieve a single pet by ID
@@ -218,7 +242,7 @@ This section defines the pet profile shape used by the in-memory database in Lab
 }
 ```
 
-**Error response (example)**
+**Error responses**
 - **Status**: `404 Not Found`
 - **When**: No pet exists with the provided `id`
 - **Body**:
@@ -226,6 +250,16 @@ This section defines the pet profile shape used by the in-memory database in Lab
 ```json
 {
   "error": "Pet not found"
+}
+```
+
+- **Status**: `500 Internal Server Error`
+- **When**: Unexpected server/database failure while retrieving pet by `id`
+- **Body**:
+
+```json
+{
+  "error": "Internal server error"
 }
 ```
 
@@ -276,7 +310,7 @@ This section defines the pet profile shape used by the in-memory database in Lab
 - Optional fields: `breed` (string), `imageUrl` (string), `adopted` (boolean, defaults to `false`)
 - Runtime enforcement: Validation is enforced before Prisma calls in Lab 3. Invalid payloads return `400` with the error shape documented below.
 
-**Error response (example)**
+**Error responses**
 - **Status**: `400 Bad Request`
 - **When**: Missing or invalid required fields
 - **Body**:
@@ -284,6 +318,16 @@ This section defines the pet profile shape used by the in-memory database in Lab
 ```json
 {
   "error": "Invalid pet data: name, type, age, and description are required"
+}
+```
+
+- **Status**: `500 Internal Server Error`
+- **When**: Unexpected server/database failure while creating a pet
+- **Body**:
+
+```json
+{
+  "error": "Internal server error"
 }
 ```
 
@@ -330,7 +374,7 @@ This section defines the pet profile shape used by the in-memory database in Lab
 }
 ```
 
-**Error response (example)**
+**Error responses**
 - **Status**: `404 Not Found`
 - **When**: No pet exists with provided `id`
 - **Body**:
@@ -364,6 +408,16 @@ This section defines the pet profile shape used by the in-memory database in Lab
 }
 ```
 
+- **Status**: `500 Internal Server Error`
+- **When**: Unexpected server/database failure while updating pet by `id`
+- **Body**:
+
+```json
+{
+  "error": "Internal server error"
+}
+```
+
 ---
 
 ## 5) Delete a pet profile
@@ -379,7 +433,7 @@ This section defines the pet profile shape used by the in-memory database in Lab
 - **Status**: `204 No Content`
 - **Body**: none
 
-**Error response (example)**
+**Error responses**
 - **Status**: `404 Not Found`
 - **When**: No pet exists with provided `id`
 - **Body**:
@@ -387,6 +441,16 @@ This section defines the pet profile shape used by the in-memory database in Lab
 ```json
 {
   "error": "Pet not found"
+}
+```
+
+- **Status**: `500 Internal Server Error`
+- **When**: Unexpected server/database failure while deleting pet by `id`
+- **Body**:
+
+```json
+{
+  "error": "Internal server error"
 }
 ```
 
