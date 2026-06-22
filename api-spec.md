@@ -595,3 +595,16 @@ This section defines the pet profile shape used by the in-memory database in Lab
 
 ### What changed most from the original Lab 1 spec
 - The spec evolved from a basic route contract to a full system document with a formal data model, Prisma/schema reconciliation notes, runtime validation rules, and decisions logs that explain why implementation choices were made.
+
+---
+
+## Decisions Log — Error Handling (Lab 4)
+
+- **Error case I found that wasn't in my original spec**: Prisma unique constraint violations (`P2002`) can occur and should not leak raw Prisma errors to clients.
+  **How I handled it**: Added centralized middleware handling for `Prisma.PrismaClientKnownRequestError` with `P2002`, returning `400` with `{ "error": "A unique constraint violation occurred." }`.
+
+- **Consistent error shape I chose and why**: `{ "error": "..." }` for all failures.
+  **Why**: Frontend code can always read one field (`error`) regardless of route or failure type, which keeps error parsing predictable.
+
+- **One case where implementation diverged from the spec**: Prisma throws `P2025` for missing records during update/delete, while the external contract expects `404 Pet not found`.
+  **How I handled it**: Route handlers translate `P2025` to `NotFoundError("Pet not found")`, and error middleware returns the contract-compliant `404` response shape.

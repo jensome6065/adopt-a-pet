@@ -1,5 +1,6 @@
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient, Prisma } = require("@prisma/client");
 const prisma = new PrismaClient()
+const { ValidationError, NotFoundError } = require("./middleware/CustomErrors");
 
 const express = require("express");
 
@@ -59,35 +60,41 @@ app.get("/hello-pet", (req, res) => {
   res.send("Hello, Pet!");
 });
 
-app.get("/pets", async (req, res) => {
-  const pets = await prisma.pet.findMany();
-  res.status(200).json({ pets });
+app.get("/pets", async (req, res, next) => {
+  try {
+    const pets = await prisma.pet.findMany();
+    res.status(200).json({ pets });
+  } catch (err) {
+    next(err);
+  }
 });
 
-app.get("/pets/:id", async (req, res) => {
+app.get("/pets/:id", async (req, res, next) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    return res.status(404).json({ error: "Pet not found" });
+    throw new NotFoundError("Pet not found");
   }
 
-  const pet = await prisma.pet.findUnique({
-    where: { id }
-  });
+  try {
+    const pet = await prisma.pet.findUnique({
+      where: { id }
+    });
 
-  if (!pet) {
-    return res.status(404).json({ error: "Pet not found" });
+    if (!pet) {
+      throw new NotFoundError("Pet not found");
+    }
+
+    res.status(200).json({ pet });
+  } catch (err) {
+    next(err);
   }
-
-  res.status(200).json({ pet });
 });
 
-app.post("/pets", async (req, res) => {
+app.post("/pets", async (req, res, next) => {
   const { name, type, breed, age, description, adopted, imageUrl } = req.body;
   const validationErrors = validatePetPayload(req.body);
   if (validationErrors.length > 0) {
-    return res.status(400).json({
-      error: "Invalid pet data: name, type, age, and description are required"
-    });
+    throw new ValidationError("Invalid pet data: name, type, age, and description are required");
   }
 
   try {
@@ -104,25 +111,21 @@ app.post("/pets", async (req, res) => {
     });
 
     res.status(201).json({ pet: newPet });
-  } catch (error) {
-    res.status(400).json({
-      error: "Invalid pet data: name, type, age, and description are required"
-    });
+  } catch (err) {
+    next(err);
   }
 });
 
-app.put("/pets/:id", async (req, res) => {
+app.put("/pets/:id", async (req, res, next) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    return res.status(404).json({ error: "Pet not found" });
+    throw new NotFoundError("Pet not found");
   }
 
   const { id: _ignoredId, ...updates } = req.body;
   const validationErrors = validatePetPayload(updates, true);
   if (validationErrors.length > 0) {
-    return res.status(400).json({
-      error: "Invalid update data: provide at least one updatable field with valid values"
-    });
+    throw new ValidationError("Invalid update data: provide at least one updatable field with valid values");
   }
 
   try {
@@ -131,18 +134,18 @@ app.put("/pets/:id", async (req, res) => {
       data: updates
     });
     res.status(200).json({ pet: updatedPet });
-  } catch (error) {
-    if (error.code === "P2025") {
-      return res.status(404).json({ error: "Pet not found" });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return next(new NotFoundError("Pet not found"));
     }
-    throw error;
+    next(err);
   }
 });
 
-app.delete("/pets/:id", async (req, res) => {
+app.delete("/pets/:id", async (req, res, next) => {
   const id = parseInt(req.params.id, 10);
   if (Number.isNaN(id)) {
-    return res.status(404).json({ error: "Pet not found" });
+    throw new NotFoundError("Pet not found");
   }
 
   try {
@@ -150,12 +153,26 @@ app.delete("/pets/:id", async (req, res) => {
       where: { id }
     });
     res.status(204).send();
-  } catch (error) {
-    if (error.code === "P2025") {
-      return res.status(404).json({ error: "Pet not found" });
+  } catch (err) {
+    if (err.code === "P2025") {
+      return next(new NotFoundError("Pet not found"));
     }
-    throw error;
+    next(err);
   }
+});
+
+app.use((err, req, res, next) => {
+  if (err instanceof ValidationError || err instanceof NotFoundError) {
+    return res.status(err.statusCode).json({ error: err.message });
+  }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2002") {
+      return res.status(400).json({ error: "A unique constraint violation occurred." });
+    }
+  }
+
+  return res.status(500).json({ error: "Internal Server Error" });
 });
 
 app.listen(PORT, () => {
